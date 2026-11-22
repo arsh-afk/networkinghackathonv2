@@ -1,102 +1,57 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Maximize, Grid3x3, Printer } from "lucide-react";
-import { slides } from "@/deck/slides";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { Btn, Logo, Kicker } from "@/app/ui";
 
 export const Route = createFileRoute("/")({
-  validateSearch: (s: Record<string, unknown>): { slide?: number; print?: boolean } => ({
-    slide: Math.min(Math.max(Number(s["slide"]) || 1, 1), slides.length),
-    ...(s["print"] !== undefined ? { print: true } : {}),
-  }),
-  head: () => ({
-    meta: [
-      { title: "Networkathon — UI Blueprint Deck" },
-      { name: "description", content: "UI designs, connectors and build template for the Networkathon live event platform." },
-      { property: "og:title", content: "Networkathon — UI Blueprint Deck" },
-      { property: "og:description", content: "Participant app, projector view and host panel designs plus build template." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
-  component: Deck,
+  head: () => ({ meta: [
+    { title: "Join Networkathon" },
+    { name: "description", content: "Join the Networkathon live event with your name and student ID." },
+    { property: "og:title", content: "Join Networkathon" },
+    { property: "og:description", content: "Join the live event on your phone in seconds." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
+  ] }),
+  component: Join,
 });
 
-function Scaled({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [s, setS] = useState(0.5);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setS(Math.min(el.clientWidth / 1920, el.clientHeight / 1080)));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+function Join() {
+  const nav = useNavigate();
+  const [name, setName] = useState("");
+  const [sid, setSid] = useState("");
+  const [dup, setDup] = useState(false);
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (sid.trim() === "22-4817") return setDup(true);
+    localStorage.setItem("nk-me", JSON.stringify({ name: name || "Guest", id: sid }));
+    nav({ to: "/live" });
+  };
   return (
-    <div ref={ref} className="absolute inset-0 overflow-hidden">
-      <div className="absolute left-1/2 top-1/2" style={{ width: 1920, height: 1080, marginLeft: -960, marginTop: -540, transform: `scale(${s})` }}>{children}</div>
-    </div>
-  );
-}
-
-function Deck() {
-  const search = Route.useSearch();
-  const slide = search.slide ?? 1;
-  const print = search.print;
-  const nav = useNavigate({ from: "/" });
-  const [grid, setGrid] = useState(false);
-  const i = slide - 1;
-  const go = (n: number) => nav({ search: { slide: Math.min(Math.max(n, 1), slides.length) }, replace: true });
-
-  useEffect(() => {
-    document.title = `${slide}/${slides.length} — ${slides[i]?.title ?? ""}`;
-  }, [slide, i]);
-  useEffect(() => {
-    if (print) setTimeout(() => window.print(), 600);
-  }, [print]);
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => {
-      if (["ArrowRight", " ", "PageDown"].includes(e.key)) go(slide + 1);
-      else if (["ArrowLeft", "PageUp"].includes(e.key)) go(slide - 1);
-      else if (e.key === "g") setGrid((g) => !g);
-      else if (e.key === "f") document.documentElement.requestFullscreen?.();
-    };
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  });
-  const tx = useRef(0);
-
-  if (print)
-    return <div>{slides.map(({ C, title }) => <div key={title} className="print-slide"><C /></div>)}</div>;
-
-  const Cur = slides[i]!.C;
-  return (
-    <div className="flex h-screen flex-col bg-deck-bg text-deck-ink">
-      <div className="flex items-center gap-2 border-b border-deck-line px-4 py-2 font-mono text-sm">
-        <span className="flex-1 truncate text-deck-dim">Networkathon · UI Blueprint</span>
-        <button aria-label="Grid" onClick={() => setGrid(!grid)} className="rounded p-2 hover:bg-deck-surface"><Grid3x3 size={18} /></button>
-        <button aria-label="Export PDF" onClick={() => window.open("/?print", "_blank")} className="rounded p-2 hover:bg-deck-surface"><Printer size={18} /></button>
-        <button aria-label="Present" onClick={() => document.documentElement.requestFullscreen?.()} className="rounded p-2 hover:bg-deck-surface"><Maximize size={18} /></button>
-      </div>
-      {grid ? (
-        <div className="grid flex-1 grid-cols-2 gap-4 overflow-auto p-6 md:grid-cols-3 lg:grid-cols-4">
-          {slides.map(({ C, title }, n) => (
-            <button key={title} onClick={() => { go(n + 1); setGrid(false); }} className={`relative aspect-video overflow-hidden rounded-lg border-2 ${n === i ? "border-deck-lime" : "border-deck-line"}`}>
-              <Scaled><C /></Scaled>
-            </button>
-          ))}
+    <main className="relative mx-auto flex min-h-screen max-w-md flex-col overflow-hidden bg-deck-bg px-6 py-10 text-deck-ink">
+      <div className="pointer-events-none absolute -right-32 -top-32 h-80 w-80 rounded-full bg-deck-lime opacity-20 blur-3xl" />
+      <Logo className="text-2xl" />
+      {dup ? (
+        <div className="flex flex-1 flex-col justify-center gap-4 text-center">
+          <div className="text-6xl">👋</div>
+          <h1 className="font-display text-3xl font-bold">Welcome back</h1>
+          <p className="text-deck-dim">Student ID <b className="text-deck-ink">22-4817</b> already joined as <b className="text-deck-ink">Aisha Rahman</b>.</p>
+          <Btn onClick={() => { localStorage.setItem("nk-me", JSON.stringify({ name: "Aisha Rahman", id: "22-4817" })); nav({ to: "/live" }); }}>That's me — continue</Btn>
+          <Btn tone="ghost" onClick={() => setDup(false)}>Not me</Btn>
         </div>
       ) : (
-        <div className="relative min-h-0 flex-1"
-          onTouchStart={(e) => (tx.current = e.touches[0]?.clientX ?? 0)}
-          onTouchEnd={(e) => { const d = (e.changedTouches[0]?.clientX ?? 0) - tx.current; if (Math.abs(d) > 50) go(slide + (d < 0 ? 1 : -1)); }}>
-          <Scaled><Cur /></Scaled>
-          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-full border border-deck-line bg-deck-surface px-3 py-1 font-mono text-sm">
-            <button aria-label="Previous" onClick={() => go(slide - 1)}><ChevronLeft size={18} /></button>
-            {slide} / {slides.length}
-            <button aria-label="Next" onClick={() => go(slide + 1)}><ChevronRight size={18} /></button>
-          </div>
-        </div>
+        <form onSubmit={submit} className="flex flex-1 flex-col justify-center gap-5">
+          <Kicker className="text-deck-lime">● Live now</Kicker>
+          <h1 className="font-display text-5xl font-bold leading-[1.02]">Join the room.</h1>
+          <p className="text-lg text-deck-dim">No passwords. Just your name and student ID.</p>
+          <label className="space-y-2"><Kicker>Full name</Kicker>
+            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Aisha Rahman" className="w-full rounded-2xl border-2 border-deck-line bg-deck-surface px-4 py-4 text-lg outline-none focus:border-deck-lime" /></label>
+          <label className="space-y-2"><Kicker>Student ID</Kicker>
+            <input required value={sid} onChange={(e) => setSid(e.target.value)} placeholder="22-0000" className="w-full rounded-2xl border-2 border-deck-line bg-deck-surface px-4 py-4 font-mono text-lg outline-none focus:border-deck-lime" /></label>
+          <Btn type="submit" className="mt-2 py-4 text-lg">Join the event →</Btn>
+          <p className="text-center text-xs text-deck-dim">Tip: try ID 22-4817 to see the "already joined" screen.</p>
+        </form>
       )}
-    </div>
+      <nav className="flex justify-center gap-4 font-mono text-xs text-deck-dim">
+        <Link to="/present" className="hover:text-deck-ink">Projector</Link><Link to="/admin" className="hover:text-deck-ink">Host panel</Link>
+      </nav>
+    </main>
   );
 }
